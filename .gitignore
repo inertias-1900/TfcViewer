@@ -3,4 +3,6 @@ obj/
 publish/win-x64/*.pdb
 *.user
 *.suo
-.vs/
+.vs/HANDOFF.md
+assets/
+*.png
