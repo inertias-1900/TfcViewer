@@ -34,7 +34,7 @@ if (args.Length >= 4 && args[0] == "--info")
     var info = ViewerQuery.GetInfoAt(irg, ibx, ibz);
     Console.WriteLine($"block=({info.BlockX},{info.BlockZ}) chunk=({info.ChunkX},{info.ChunkZ})");
     Console.WriteLine($"biome={info.BiomeId} temp={info.Temperature:F1} rain={info.Rainfall:F1}");
-    Console.WriteLine($"climate={info.Climate} confidence={info.ConfidencePercent}%");
+    Console.WriteLine($"climate={ViewerQuery.ClimateLocalized(info.Climate, false)} confidence={info.ConfidencePercent}%");
     return;
 }
 

@@ -68,17 +68,51 @@ public static class ViewerQuery
     }
 
     /// <summary>气候分类：TFC ChooseBiomes 的阈值风格（冰盖线 -17+0.006r / 冰缘 +2.5 / 古冰缘 +6 / 沙漠 60 / 半干旱 155 / 喀斯特 250-425）</summary>
+    /// <returns>稳定英文 key，显示语言由调用方本地化</returns>
     public static string ClassifyClimate(float temperature, float rainfall)
     {
         float iceLine = -17f + 0.006f * rainfall;
-        if (rainfall >= 0f && temperature < iceLine) return "冰盖";
-        if (rainfall >= 0f && temperature < iceLine + 2.5f) return "冰缘";
-        if (rainfall >= 0f && temperature < iceLine + 6f) return "古冰缘";
-        if (rainfall < 60f) return "沙漠";
-        if (rainfall < 155f) return "半干旱";
-        if (rainfall > 425f && rainfall + 10f * temperature > 500f) return "湿热";
-        if (rainfall > 375f) return "湿润";
-        if (rainfall > 250f) return "半湿润";
-        return "温带";
+        if (rainfall >= 0f && temperature < iceLine) return "ice_sheet";
+        if (rainfall >= 0f && temperature < iceLine + 2.5f) return "ice_edge";
+        if (rainfall >= 0f && temperature < iceLine + 6f) return "paleo_ice_margin";
+        if (rainfall < 60f) return "desert";
+        if (rainfall < 155f) return "semi_arid";
+        if (rainfall > 425f && rainfall + 10f * temperature > 500f) return "hot_humid";
+        if (rainfall > 375f) return "humid";
+        if (rainfall > 250f) return "semi_humid";
+        return "temperate";
+    }
+
+    private static readonly Dictionary<string, string> ClimateZh = new()
+    {
+        ["ice_sheet"] = "冰盖",
+        ["ice_edge"] = "冰缘",
+        ["paleo_ice_margin"] = "古冰缘",
+        ["desert"] = "沙漠",
+        ["semi_arid"] = "半干旱",
+        ["semi_humid"] = "半湿润",
+        ["humid"] = "湿润",
+        ["hot_humid"] = "湿热",
+        ["temperate"] = "温带",
+    };
+
+    private static readonly Dictionary<string, string> ClimateEn = new()
+    {
+        ["ice_sheet"] = "Ice sheet",
+        ["ice_edge"] = "Ice edge",
+        ["paleo_ice_margin"] = "Paleo ice margin",
+        ["desert"] = "Desert",
+        ["semi_arid"] = "Semi-arid",
+        ["semi_humid"] = "Semi-humid",
+        ["humid"] = "Humid",
+        ["hot_humid"] = "Hot & humid",
+        ["temperate"] = "Temperate",
+    };
+
+    /// <summary>气候类型显示名（按语言）</summary>
+    public static string ClimateLocalized(string key, bool english)
+    {
+        var map = english ? ClimateEn : ClimateZh;
+        return map.TryGetValue(key, out var s) ? s : key;
     }
 }

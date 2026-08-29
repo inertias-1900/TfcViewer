@@ -12,7 +12,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="biome_colors.json" />
-    <None Include="assets/wheat.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

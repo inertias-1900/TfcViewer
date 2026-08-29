@@ -256,7 +256,7 @@ public sealed class MainForm : Form
                             $"Biome: {info.BiomeId}",
                             $"Temperature: {info.Temperature:F1} °C",
                             $"Rainfall: {info.Rainfall:F1} mm",
-                            $"Climate: {info.Climate}",
+                            $"Climate: {ViewerQuery.ClimateLocalized(info.Climate, true)}",
                             $"Confidence: {info.ConfidencePercent}%",
                         }
                         : new[]
@@ -266,7 +266,7 @@ public sealed class MainForm : Form
                             $"预测群系: {DisplayName(info.BiomeId)}",
                             $"温度: {info.Temperature:F1} °C",
                             $"降水: {info.Rainfall:F1} mm",
-                            $"预测气候: {info.Climate}",
+                            $"预测气候: {ViewerQuery.ClimateLocalized(info.Climate, false)}",
                             $"置信度: {info.ConfidencePercent}%",
                         },
                 };
