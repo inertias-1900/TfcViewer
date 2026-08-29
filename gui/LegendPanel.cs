@@ -60,9 +60,13 @@ public sealed class LegendPanel : UserControl
 {
     public event Action? SelectionChanged;
 
+    /// <summary>true = 英文界面（标题/按钮英文）</summary>
+    public bool English;
+
     private readonly Dictionary<int, LegendEntry> _entries = new();
     private readonly FlowLayoutPanel _list;
     private readonly Button _clearBtn;
+    private readonly Label _titleLabel;
 
     public HashSet<int> Selected { get; } = new();
 
@@ -72,7 +76,7 @@ public sealed class LegendPanel : UserControl
         MinimumSize = new Size(260, 100);
 
         var title = new Panel { Dock = DockStyle.Top, Height = 36 };
-        var lbl = new Label
+        _titleLabel = new Label
         {
             Text = "图例（点击多选）",
             Font = new Font("Microsoft YaHei UI", 10f, FontStyle.Bold),
@@ -85,11 +89,11 @@ public sealed class LegendPanel : UserControl
             Font = new Font("Microsoft YaHei UI", 9f),
             AutoSize = true,
             Visible = false,
-            Location = new Point(140, 6),
+            Location = new Point(150, 6),
             BackColor = Color.FromArgb(255, 200, 200),
         };
         _clearBtn.Click += (_, _) => ClearSelection();
-        title.Controls.Add(lbl);
+        title.Controls.Add(_titleLabel);
         title.Controls.Add(_clearBtn);
 
         _list = new FlowLayoutPanel
@@ -102,6 +106,13 @@ public sealed class LegendPanel : UserControl
 
         Controls.Add(_list);
         Controls.Add(title);
+    }
+
+    /// <summary>切换界面语言，刷新标题/按钮文字</summary>
+    public void ApplyLanguage()
+    {
+        _titleLabel.Text = English ? "Legend (click to multi-select)" : "图例（点击多选）";
+        _clearBtn.Text = English ? "✕ Clear selection" : "✕ 取消选择";
     }
 
     /// <summary>刷新图例内容（只列当前视图出现的群系，保持已有选中）</summary>

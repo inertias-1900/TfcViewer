@@ -7,6 +7,7 @@ namespace TfcViewerGui;
 
 /// <summary>
 /// 主窗体：窗口固定大小；左图例 + 512×512 主画布；右侧栏（上部状态显示区 + 下部整体预览/拖动按钮）。
+/// 右上角语言切换（中文 ⇄ English UI）。
 /// </summary>
 public sealed class MainForm : Form
 {
@@ -20,17 +21,25 @@ public sealed class MainForm : Form
     private bool _rendering;
     private bool _pendingRender;
     private string _renderState = "就绪";
+    private bool _en;                            // true = 英文界面
 
     private readonly CanvasView _canvas = new() { Size = new Size(512, 512) };
     private readonly LegendPanel _legend = new();
     private readonly MinimapView _minimap = new();
     private readonly ToggleButton _dragBtn = new("拖动模式");
     private readonly Button _layerBtn = new();
+    private readonly Button _langBtn = new();
     private readonly TextBox _seedBox = new();
     private readonly TextBox _xBox = new();
     private readonly TextBox _zBox = new();
     private readonly TextBox _scaleBox = new();
     private readonly Label _statusText = new();
+    private readonly Label _statusTitle = new();
+    private readonly List<(int Id, string Name, Color Color)> _lastPresent = new();
+
+    // 工具条文本控件（语言切换时更新）
+    private readonly Label _seedLbl = new(), _xLbl = new(), _zLbl = new(), _scaleLbl = new();
+    private readonly Button _loadBtn = new(), _goBtn = new();
 
     private Point? _dragStart;
     private double _dragCenterBX, _dragCenterBZ;
@@ -58,21 +67,25 @@ public sealed class MainForm : Form
         _zBox.Width = 70;
         _scaleBox.Text = "16";
         _scaleBox.Width = 55;
-        var loadBtn = new Button { Text = "加载", AutoSize = true };
-        flow.Controls.Add(new Label { Text = "种子:", AutoSize = true });
+        flow.Controls.Add(_seedLbl);
         flow.Controls.Add(_seedBox);
-        flow.Controls.Add(loadBtn);
-        flow.Controls.Add(new Label { Text = "中心 X:", AutoSize = true });
+        flow.Controls.Add(_loadBtn);
+        flow.Controls.Add(_xLbl);
         flow.Controls.Add(_xBox);
-        flow.Controls.Add(new Label { Text = "Z:", AutoSize = true });
+        flow.Controls.Add(_zLbl);
         flow.Controls.Add(_zBox);
-        flow.Controls.Add(new Label { Text = "块/像素:", AutoSize = true });
+        flow.Controls.Add(_scaleLbl);
         flow.Controls.Add(_scaleBox);
-        var goBtn = new Button { Text = "跳转", AutoSize = true };
-        flow.Controls.Add(goBtn);
-        _layerBtn.Text = "图层: 群系";
+        flow.Controls.Add(_goBtn);
         flow.Controls.Add(_layerBtn);
         top.Controls.Add(flow);
+
+        // 右上角语言切换：中文界面显示 "English UI"，英文界面显示 "中文界面"
+        _langBtn.Dock = DockStyle.Right;
+        _langBtn.Width = 110;
+        _langBtn.FlatStyle = FlatStyle.System;
+        _langBtn.Click += (_, _) => { _en = !_en; ApplyLanguage(); };
+        top.Controls.Add(_langBtn);
 
         // ---- 左图例 ----
         _legend.Dock = DockStyle.Left;
@@ -83,19 +96,15 @@ public sealed class MainForm : Form
         var right = new Panel { Dock = DockStyle.Right, Width = 290, BackColor = Color.FromArgb(238, 240, 244) };
 
         var statusPanel = new Panel { Dock = DockStyle.Top, Height = 128, BackColor = Color.FromArgb(238, 240, 244), Padding = new Padding(10, 8, 10, 4) };
-        var statusTitle = new Label
-        {
-            Text = "状态",
-            Font = new Font("Microsoft YaHei UI", 10f, FontStyle.Bold),
-            AutoSize = true,
-            Location = new Point(10, 8),
-        };
+        _statusTitle.Font = new Font("Microsoft YaHei UI", 10f, FontStyle.Bold);
+        _statusTitle.AutoSize = true;
+        _statusTitle.Location = new Point(10, 8);
         _statusText.Location = new Point(10, 32);
         _statusText.AutoSize = false;
         _statusText.Size = new Size(270, 92);
         _statusText.Font = new Font("Microsoft YaHei UI", 9f);
         statusPanel.Controls.Add(_statusText);
-        statusPanel.Controls.Add(statusTitle);
+        statusPanel.Controls.Add(_statusTitle);
 
         _minimap.Dock = DockStyle.Bottom;
         _minimap.Height = 172;
@@ -139,20 +148,57 @@ public sealed class MainForm : Form
         Controls.Add(right);
         Controls.Add(top);
 
-        loadBtn.Click += (_, _) => TryLoadSeed();
-        goBtn.Click += (_, _) => { ParseCenterFields(); RenderAsync(); };
+        _loadBtn.Click += (_, _) => TryLoadSeed();
+        _goBtn.Click += (_, _) => { ParseCenterFields(); RenderAsync(); };
         _layerBtn.Click += (_, _) =>
         {
             _layer = _layer switch { "biome" => "temperature", "temperature" => "rainfall", _ => "biome" };
-            _layerBtn.Text = "图层: " + (_layer == "biome" ? "群系" : _layer == "temperature" ? "温度" : "降雨");
+            _layerBtn.Text = _en ? "Layer: " + LayerNameEn : "图层: " + LayerNameZh;
             _legend.Visible = _layer == "biome";
             _canvas.SetSelected(new HashSet<int>());
             _legend.ClearSelection();
             RenderAsync();
         };
 
+        _langBtn.Text = "English UI";
+        ApplyLanguage();
         RenderAsync();
     }
+
+    private string LayerNameZh => _layer == "biome" ? "群系" : _layer == "temperature" ? "温度" : "降雨";
+    private string LayerNameEn => _layer == "biome" ? "Biome" : _layer == "temperature" ? "Temperature" : "Rainfall";
+
+    /// <summary>按 _en 刷新所有界面文本</summary>
+    private void ApplyLanguage()
+    {
+        _langBtn.Text = _en ? "中文界面" : "English UI";
+        Text = _en ? "TFC Biome Viewer" : "TFC 群系查看器";
+        _seedLbl.Text = _en ? "Seed:" : "种子:";
+        _loadBtn.Text = _en ? "Load" : "加载";
+        _xLbl.Text = _en ? "Center X:" : "中心 X:";
+        _zLbl.Text = _en ? "Z:" : "Z:";
+        _scaleLbl.Text = _en ? "Blocks/px:" : "块/像素:";
+        _goBtn.Text = _en ? "Go" : "跳转";
+        _layerBtn.Text = _en ? "Layer: " + LayerNameEn : "图层: " + LayerNameZh;
+        _dragBtn.Text = _en ? "Drag mode" : "拖动模式";
+        _statusTitle.Text = _en ? "Status" : "状态";
+        _legend.English = _en;
+        _legend.ApplyLanguage();
+        _canvas.English = _en;
+        _minimap.English = _en;
+        if (_layer == "biome" && _lastPresent.Count > 0)
+        {
+            _legend.SetLegend(_lastPresent.Select(p => (p.Id, DisplayName(p.Name), p.Color)));
+        }
+        _canvas.ClearBubble();
+        _canvas.Invalidate();
+        _minimap.Invalidate();
+        _renderState = _en ? "Ready" : "就绪";
+        UpdateStatus();
+    }
+
+    private string DisplayName(string biomeId)
+        => !_en && _zh.TryGetValue(biomeId, out var cn) ? $"{cn}({biomeId})" : biomeId;
 
     private void LoadEngine(long seed)
     {
@@ -202,16 +248,27 @@ public sealed class MainForm : Form
                 _canvas.Bubble = new BubbleData
                 {
                     Anchor = anchor,
-                    Lines = new[]
-                    {
-                        $"区块坐标: ({info.ChunkX}, {info.ChunkZ})",
-                        $"方块坐标: ({info.BlockX}, {info.BlockZ})",
-                        $"预测群系: {BiomeZh.DisplayName(info.BiomeId, _zh)}",
-                        $"温度: {info.Temperature:F1} °C",
-                        $"降水: {info.Rainfall:F1} mm",
-                        $"预测气候: {info.Climate}",
-                        $"置信度: {info.ConfidencePercent}%",
-                    },
+                    Lines = _en
+                        ? new[]
+                        {
+                            $"Chunk: ({info.ChunkX}, {info.ChunkZ})",
+                            $"Block: ({info.BlockX}, {info.BlockZ})",
+                            $"Biome: {info.BiomeId}",
+                            $"Temperature: {info.Temperature:F1} °C",
+                            $"Rainfall: {info.Rainfall:F1} mm",
+                            $"Climate: {info.Climate}",
+                            $"Confidence: {info.ConfidencePercent}%",
+                        }
+                        : new[]
+                        {
+                            $"区块坐标: ({info.ChunkX}, {info.ChunkZ})",
+                            $"方块坐标: ({info.BlockX}, {info.BlockZ})",
+                            $"预测群系: {DisplayName(info.BiomeId)}",
+                            $"温度: {info.Temperature:F1} °C",
+                            $"降水: {info.Rainfall:F1} mm",
+                            $"预测气候: {info.Climate}",
+                            $"置信度: {info.ConfidencePercent}%",
+                        },
                 };
                 _canvas.Invalidate();
             });
@@ -243,7 +300,7 @@ public sealed class MainForm : Form
             return;
         }
         _rendering = true;
-        _renderState = "正在重新计算...";
+        _renderState = _en ? "Rendering..." : "正在重新计算...";
         _canvas.Rendering = true;
         _canvas.Invalidate();
         UpdateStatus();
@@ -270,10 +327,11 @@ public sealed class MainForm : Form
                     _minimap.WorldSpan = mmSpan;
                     if (layer == "biome" && result.Present.Count > 0)
                     {
-                        _legend.SetLegend(result.Present.Select(p =>
-                            (p.Id, BiomeZh.DisplayName(p.Name, _zh), p.Color)));
+                        _lastPresent.Clear();
+                        _lastPresent.AddRange(result.Present.Select(p => (p.Id, p.Name, p.Color)));
+                        _legend.SetLegend(_lastPresent.Select(p => (p.Id, DisplayName(p.Name), p.Color)));
                     }
-                    _renderState = "就绪";
+                    _renderState = _en ? "Ready" : "就绪";
                     UpdateStatus();
                     _minimap.Invalidate();
                     _canvas.Rendering = false;
@@ -284,7 +342,7 @@ public sealed class MainForm : Form
             {
                 BeginInvoke(() =>
                 {
-                    _renderState = "错误: " + ex.Message;
+                    _renderState = (_en ? "Error: " : "错误: ") + ex.Message;
                     UpdateStatus();
                     _canvas.Rendering = false;
                     _canvas.Invalidate();
@@ -305,14 +363,19 @@ public sealed class MainForm : Form
     private void UpdateStatus()
     {
         double span = Math.Max(_canvas.Width, _canvas.Height) * _bpp;
-        _statusText.Text = string.Format(
-            "中心: ({0:F0}, {1:F0}) 块\n视图: {2:F0}×{3:F0} chunk ({4:F0}×{5:F0} 块 / {6:F1}×{7:F1} km)\n块/像素: {8:F2}\n图层: {9}\n渲染: {10}",
-            _centerBX, _centerBZ,
-            span * 0.0625, span * 0.0625,
-            span, span,
-            span * 0.0625, span * 0.0625,
-            _bpp,
-            _layer == "biome" ? "群系" : _layer == "temperature" ? "温度" : "降雨",
-            _renderState);
+        if (_en)
+        {
+            _statusText.Text = string.Format(
+                "Center: ({0:F0}, {1:F0})\nView: {2:F0}×{3:F0} chunks ({4:F0}×{5:F0} blocks / {6:F1}×{7:F1} km)\nBlocks/px: {8:F2}\nLayer: {9}\nRender: {10}",
+                _centerBX, _centerBZ, span * 0.0625, span * 0.0625, span, span, span * 0.0625, span * 0.0625,
+                _bpp, LayerNameEn, _renderState);
+        }
+        else
+        {
+            _statusText.Text = string.Format(
+                "中心: ({0:F0}, {1:F0}) 块\n视图: {2:F0}×{3:F0} chunk ({4:F0}×{5:F0} 块 / {6:F1}×{7:F1} km)\n块/像素: {8:F2}\n图层: {9}\n渲染: {10}",
+                _centerBX, _centerBZ, span * 0.0625, span * 0.0625, span, span, span * 0.0625, span * 0.0625,
+                _bpp, LayerNameZh, _renderState);
+        }
     }
 }

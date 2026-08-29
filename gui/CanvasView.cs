@@ -17,7 +17,8 @@ public sealed class CanvasView : UserControl
 
     public HashSet<int> Selected { get; private set; } = new();
     public bool DragMode;
-    public bool Rendering;   // 渲染中：灰白覆盖层 + "正在重新计算"
+    public bool Rendering;   // 渲染中：灰白覆盖层 + 提示
+    public bool English;     // 英文界面（提示文字）
 
     public BubbleData? Bubble;
 
@@ -162,7 +163,7 @@ public sealed class CanvasView : UserControl
         {
             using var f = new Font("Microsoft YaHei UI", 12f);
             using var b = new SolidBrush(Color.White);
-            g.DrawString("渲染中...", f, b, 10, 10);
+            g.DrawString(English ? "Rendering..." : "渲染中...", f, b, 10, 10);
         }
         if (DragMode)
         {
@@ -174,7 +175,7 @@ public sealed class CanvasView : UserControl
             g.FillRectangle(bg, 8, 8, 250, 30);
             using var f = new Font("Microsoft YaHei UI", 10.5f, FontStyle.Bold);
             using var tb = new SolidBrush(Color.Black);
-            g.DrawString("拖动模式：按住左键拖动画面", f, tb, 14, 13);
+            g.DrawString(English ? "Drag mode: hold LMB to pan" : "拖动模式：按住左键拖动画面", f, tb, 14, 13);
         }
         DrawBubble(g);
 
@@ -185,8 +186,9 @@ public sealed class CanvasView : UserControl
             g.FillRectangle(cover, 0, 0, Width, Height);
             using var f = new Font("Microsoft YaHei UI", 14f, FontStyle.Bold);
             using var tb = new SolidBrush(Color.FromArgb(70, 70, 70));
-            var sz = g.MeasureString("正在重新计算", f);
-            g.DrawString("正在重新计算", f, tb, (Width - sz.Width) / 2f, (Height - sz.Height) / 2f);
+            var msg = English ? "Rendering..." : "正在重新计算";
+            var sz = g.MeasureString(msg, f);
+            g.DrawString(msg, f, tb, (Width - sz.Width) / 2f, (Height - sz.Height) / 2f);
         }
     }
 

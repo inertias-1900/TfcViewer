@@ -1,64 +1,65 @@
-# TFC 群系查看器
+# TFC Biome Viewer
 
-TerraFirmaCraft（MC 1.21 / NeoForge 21.1）世界的**离线群系查看器**：无需 Java、无需游戏本体，输入世界种子即可查看群系分布、温度、降水，并支持点击查询、多选群系高亮。
+An **offline biome viewer** for TerraFirmaCraft (MC 1.21 / NeoForge 21.1): no Java, no game client required — type in a world seed and get biome, temperature and rainfall maps, with click-to-inspect, multi-select highlighting, and an overview minimap.
 
-> 本工具（引擎移植 + CLI + WinForms 图形界面）**完全由「什亭之匣」 Vibe Coding 制作**。
-> 引擎为零外部依赖的 .NET 8 移植，已与 Java 版逻辑**逐像素 100% 对拍一致**（512×512 全图 0 差异，种子 testseed2 与 12345 验证）。
+> This tool (engine port + CLI + WinForms GUI) was **fully vibecoded by 什亭之匣 (Shitingzhixia — "The Ark of Shittim")**.
+> The engine is a zero-dependency .NET 8 port verified **pixel-perfect 100% identical** to the Java/TFC logic (512×512 full-image diff = 0 on seeds `testseed2` and `12345`).
 
-## 功能
+## Features
 
-- **主画布**：群系 / 温度 / 降雨 三个图层；滚轮以鼠标为中心缩放；默认查看模式单击弹出信息气泡
-- **点击气泡**：区块坐标、方块坐标、预测群系、温度、降水、预测气候（TFC 真实阈值分类）、置信度（启发式）
-- **左侧图例**：列出当前视图出现的群系（色块+名称），点击**多选**；选中后其他群系灰度显示、选中群系原色 + 白色描边高亮；"✕ 取消选择"一键清除
-- **右下角整体预览**：白色边框标记当前视图范围，点击/拖动快速跳转；"拖动模式"按钮启用画布平移
-- **CLI**：命令行直接出 PNG（`tfcviewer <种子> [大小] [块每像素] [图层] [输出.png]`）
+- **Main canvas**: Biome / Temperature / Rainfall layers; mouse-wheel zoom around cursor; click for an info bubble in default view mode
+- **Click bubble**: chunk coords, block coords, biome, temperature, rainfall, climate (TFC threshold-based), confidence (heuristic)
+- **Left legend**: lists biomes present in the current view (Chinese names with IDs in zh UI, raw `tfc:xxx` in English UI); click to **multi-select** — unselected biomes turn grayscale, selected keep their color with a white outline; "✕ Clear selection" deselects all
+- **Overview minimap** (right panel, bottom): white frame marks the current view; click/drag to jump. "Drag mode" toggle button above it — hold LMB to pan the canvas (re-renders on release)
+- **Language**: toggle button in the top-right corner — `English UI` ⇄ `中文界面`
+- **CLI**: render PNGs from the command line (`tfcviewer <seed> [size] [blocks_per_pixel] [layer] [out.png]`)
 
-## 下载与使用
+## Download & Usage
 
-- 图形界面发布包：`publish/TfcViewerGui_win-x64.zip`（Windows x64，需 .NET 8 Desktop Runtime）
-- 用法：`TfcViewerGui.exe <种子>`（数字或字符串，如 `testseed2`）；各功能说明见发布包内《使用说明.txt》
+- Windows x64 build: `publish/TfcViewerGui_win-x64.zip` (requires .NET 8 Desktop Runtime)
+- Run: `TfcViewerGui.exe <seed>` (numeric, or any string — hashed like Minecraft does, e.g. `testseed2`)
 
-## 置信度与预览不确定性
+## Confidence & Preview Uncertainty
 
-信息气泡中的"置信度"是一个**启发式指标**：点选位置周围 5×5 quart 网格（约 20×20 方块）中与中心同群系的比例（0-100%）。它不代表概率，而是"这个采样点能代表多大范围的同质区域"。
+"Confidence" in the info bubble is a **heuristic**: the fraction of the 5×5 quart grid (≈20×20 blocks) around the clicked position that shares the center biome (0–100%). It is not a probability — it measures how homogeneous the sampled area is.
 
-**什么情况下置信度会低于 100%**（种子预览产生不确定）：
+**Confidence drops below 100% when:**
 
-- **群系交界/过渡带**：山脉↔平原、森林↔草原等大边界附近，邻域内多个不同群系交错；
-- **海岸线**：海洋/海岸群系边界的一两条像素带；
-- **河流附近**：河流及其 fractal 缓冲带会覆盖多个群系，河道两侧取样容易落在混合区；
-- **高缩放级别**：块/像素值较大时，一个像素代表 16×16 块甚至更大的区域，像素内可能横跨多种群系；
-- **小尺度交错群系**：喀斯特系（cenote / doline / 石林）等天然琐碎分布的群系，同质区域很小。
+- **Biome borders / transition zones** — mountain↔plains, forest↔grassland and other large edges mix several biomes nearby;
+- **Coastlines** — the 1–2 pixel band between ocean and coastal biomes;
+- **Near rivers** — a river and its fractal buffer overlays several biomes;
+- **High zoom-out** — with a large blocks/pixel value, one pixel represents a 16×16 block area or more, possibly spanning multiple biomes;
+- **Small-scale interleaved biomes** — karst families (cenote / doline / stone forests) are naturally fragmented with tiny homogeneous patches.
 
-补充：世界生成本身是**确定性**的——同一种子、同一位置永远得到同一结果；置信度低不代表"结果可能错误"，只表示该取样点所处的区域内部并不纯粹。需要精确定位时，可缩小"块/像素"数值（或滚轮放大）后重新点击。
+Note: world generation is **deterministic** — the same seed and position always yields the same result. Low confidence does not mean the result may be wrong; it means the sampled spot sits in a mixed region. To pinpoint, lower the "Blocks/px" value (or zoom in with the wheel) and click again.
 
-## 从源码构建
+## Building from Source
 
-需要 .NET 8 SDK。
+Requires .NET 8 SDK.
 
 ```bash
-# GUI（Windows 查看器，交叉编译）
+# GUI (Windows viewer; cross-compile from Linux works)
 cd gui
 dotnet publish TfcViewerGui.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true
 
-# CLI（引擎 + 命令行出图，Linux/Windows 均可）
+# CLI (engine + command-line rendering; Linux/Windows)
 cd ..
 dotnet build -c Release
 ./bin/Release/net8.0/tfcviewer testseed2 512 16 biome out.png
 ```
 
-## 目录结构
+## Repository Layout
 
-- `src/` — 引擎（Core/Mth/随机源、Noise、Settings、Region 生成任务、河流生成、群系层链）+ CLI + 查询 API
-- `gui/` — WinForms 查看器（共享引擎源码）
-- `publish/` — Windows 发布包
+- `src/` — engine (Core/Mth/random, Noise, Settings, Region tasks, river generation, biome layer chain) + CLI + query API
+- `gui/` — WinForms viewer (shares engine sources)
+- `publish/` — Windows release package
 
-## 一致性验证
+## Verification
 
-- 河流生成：562 条（与 Java 一致）、任务随机探针逐值一致
-- 区域数据：15251 点全量 dump（biome/land/ocean/河流/湖泊标记）0 差异
-- 512×512 渲染：testseed2（= -1162099057）与 12345 均 0/262144 像素差异
+- River generation: 562 rivers, identical to Java; per-value random-state probe identical
+- Region data: 15,251-point full dump (biome/land/ocean/river/lake flags) — 0 diffs
+- 512×512 rendering: seeds `testseed2` (= -1162099057) and `12345` — **0/262,144 pixel diffs**
 
-## 许可说明
+## License Notes
 
-本工具为 TFC（[TerraFirmaCraft](https://www.curseforge.com/minecraft/mc-mods/terrafirmacraft)，EUPL-1.2 许可）世界生成逻辑的独立离线复刻，使用官方配色数据；不含第三方程式库，不包含游戏资源。
+An independent offline re-implementation of the world-gen logic of [TerraFirmaCraft](https://www.curseforge.com/minecraft/mc-mods/terrafirmacraft) (EUPL-1.2), using official biome color data and the official zh_cn translations for Chinese names. No third-party libraries, no game assets included.

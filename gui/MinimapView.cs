@@ -6,6 +6,7 @@ public sealed class MinimapView : UserControl
     public Bitmap? Image;
     public double ViewCx, ViewCz, ViewSpan; // 主视图跨度（块）
     public double WorldSpan;                 // 小地图覆盖跨度（块）
+    public bool English;                     // 英文界面（提示文字）
 
     public event Action<double, double>? Jump; // 跳转到目标中心（块坐标）
 
@@ -29,7 +30,7 @@ public sealed class MinimapView : UserControl
         {
             using var f = new Font("Microsoft YaHei UI", 9f);
             using var b = new SolidBrush(Color.White);
-            g.DrawString("渲染中...", f, b, 8, 8);
+            g.DrawString(English ? "Rendering..." : "渲染中...", f, b, 8, 8);
         }
 
         if (WorldSpan > 0)
