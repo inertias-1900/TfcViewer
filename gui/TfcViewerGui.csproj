@@ -20,7 +20,6 @@
     <Compile Include="../src/**/*.cs" Exclude="../src/Program.cs" />
     <EmbeddedResource Include="../biome_colors.json" LogicalName="TfcViewer.biome_colors.json" />
     <EmbeddedResource Include="../biome_zh.json" LogicalName="TfcViewer.biome_zh.json" />
-    <None Include="../assets/wheat.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

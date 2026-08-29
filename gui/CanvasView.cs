@@ -190,10 +190,16 @@ public sealed class CanvasView : UserControl
         }
     }
 
+    private RectangleF _bubbleRect = RectangleF.Empty;
+
     private void DrawBubble(Graphics g)
     {
         var bub = Bubble;
-        if (bub == null) return;
+        if (bub == null)
+        {
+            _bubbleRect = RectangleF.Empty;
+            return;
+        }
         using var f = new Font("Microsoft YaHei UI", 9f);
         float lineH = f.GetHeight(g) + 2;
         float w = 0, h = lineH * bub.Lines.Length + 10;
@@ -208,6 +214,7 @@ public sealed class CanvasView : UserControl
         if (y + h > Height - 4) y = Height - h - 4;
         if (x < 4) x = 4;
         if (y < 4) y = 4;
+        _bubbleRect = new RectangleF(x, y, w, h);
 
         using var bg = new SolidBrush(Color.FromArgb(235, 245, 255));
         using var border = new Pen(Color.FromArgb(40, 80, 150), 1.5f);
@@ -221,6 +228,9 @@ public sealed class CanvasView : UserControl
             ty += lineH;
         }
     }
+
+    /// <summary>点击是否落在气泡内部（用于"点气泡关闭气泡"）</summary>
+    public bool HitTestBubble(Point p) => Bubble != null && _bubbleRect.Contains(p);
 
     protected override void OnMouseDown(MouseEventArgs e)
     {

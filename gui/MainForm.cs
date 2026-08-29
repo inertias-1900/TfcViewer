@@ -179,6 +179,12 @@ public sealed class MainForm : Form
     private void OnCanvasClick(Point p)
     {
         if (_dragBtn.Checked) return;
+        // 点击气泡内部 → 只关闭气泡，不弹新气泡
+        if (_canvas.HitTestBubble(p))
+        {
+            _canvas.ClearBubble();
+            return;
+        }
         _canvas.ClearBubble();
         int w = _canvas.Width, h = _canvas.Height;
         double minBX = _centerBX - w * _bpp / 2.0;
