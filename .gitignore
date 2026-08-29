@@ -4,5 +4,4 @@ publish/win-x64/*.pdb
 *.user
 *.suo
 .vs/
-HANDOFF.md
 *.png
