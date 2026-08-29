@@ -165,11 +165,15 @@ public sealed class CanvasView : UserControl
         }
         if (DragMode)
         {
-            using var pen = new Pen(Color.FromArgb(255, 200, 60), 1f);
-            g.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
-            using var f = new Font("Microsoft YaHei UI", 9f);
-            using var b2 = new SolidBrush(Color.FromArgb(255, 200, 60));
-            g.DrawString("拖动模式：按住左键平移", f, b2, 6, 4);
+            // 拖动模式边框
+            using var pen = new Pen(Color.FromArgb(255, 200, 60), 2f);
+            g.DrawRectangle(pen, 1, 1, Width - 3, Height - 3);
+            // 左上角说明：白底 + 加粗黑字
+            using var bg = new SolidBrush(Color.White);
+            g.FillRectangle(bg, 8, 8, 250, 30);
+            using var f = new Font("Microsoft YaHei UI", 10.5f, FontStyle.Bold);
+            using var tb = new SolidBrush(Color.Black);
+            g.DrawString("拖动模式：按住左键拖动画面", f, tb, 14, 13);
         }
         DrawBubble(g);
     }

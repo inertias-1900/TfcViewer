@@ -3,6 +3,7 @@ obj/
 publish/win-x64/*.pdb
 *.user
 *.suo
-.vs/HANDOFF.md
-assets/
-*.png
+.vs/
+HANDOFF.md
+# MC 原始资源不推（wheat.ico 为构建必需，保留）
+assets/*.png

@@ -15,8 +15,11 @@ public sealed class LegendEntry : Control
         BiomeId = id;
         BiomeName = name;
         BiomeColor = color;
-        Size = new Size(240, 26);
         Cursor = Cursors.Hand;
+        // 宽度自适应（长中文名 + tfc:id 全称可能很长，允许横向滚动查看）
+        var display = name.StartsWith("tfc:") ? name[4..] : name;
+        int w = TextRenderer.MeasureText(display, new Font("Microsoft YaHei UI", 9f)).Width;
+        Size = new Size(Math.Clamp(w + 44, 140, 900), 26);
     }
 
     protected override void OnPaint(PaintEventArgs e)

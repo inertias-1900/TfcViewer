@@ -5,22 +5,26 @@ using TfcViewer.World.Region;
 
 namespace TfcViewerGui;
 
-/// <summary>主窗体：左图例 + 主画布(含气泡) + 右下小地图/拖动按钮 + 顶部工具条</summary>
+/// <summary>
+/// 主窗体：窗口固定大小；左图例 + 512×512 主画布（默认 512×512 chunk 视图）；
+/// 右下角整体预览与"拖动模式"开关固定在画布右下角。
+/// </summary>
 public sealed class MainForm : Form
 {
     private readonly Dictionary<string, int[]> _colors = BiomeColors.Load();
+    private readonly Dictionary<string, string> _zh = BiomeZh.Load();
 
     private RegionGenerator _rg = null!;
     private double _centerBX = 0, _centerBZ = 0;
-    private double _bpp = 16;
+    private double _bpp = 16;                    // 默认 16 = 每像素 1 chunk → 512×512 chunk 视图
     private string _layer = "biome";
     private bool _rendering;
     private bool _pendingRender;
 
-    private readonly CanvasView _canvas = new();
+    private readonly CanvasView _canvas = new() { Size = new Size(512, 512) };
     private readonly LegendPanel _legend = new();
     private readonly MinimapView _minimap = new();
-    private readonly CheckBox _dragBtn = new();
+    private readonly ToggleButton _dragBtn = new("拖动模式");
     private readonly Button _layerBtn = new();
     private readonly TextBox _seedBox = new();
     private readonly TextBox _xBox = new();
@@ -31,12 +35,13 @@ public sealed class MainForm : Form
 
     private Point? _dragStart;
     private double _dragCenterBX, _dragCenterBZ;
-    private int _viewW = 900, _viewH = 700;
 
     public MainForm(long seed)
     {
         Text = "TFC 群系查看器";
-        Size = new Size(1280, 860);
+        FormBorderStyle = FormBorderStyle.FixedSingle;   // 固定窗口，不允许拉伸
+        MaximizeBox = false;
+        ClientSize = new Size(790, 600);
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Microsoft YaHei UI", 9f);
 
@@ -54,7 +59,7 @@ public sealed class MainForm : Form
         _scaleBox.Text = "16";
         _scaleBox.Width = 55;
         var loadBtn = new Button { Text = "加载", AutoSize = true };
-        flow.Controls.Add(new Label { Text = "种子:", AutoSize = true, Anchor = AnchorStyles.Left });
+        flow.Controls.Add(new Label { Text = "种子:", AutoSize = true });
         flow.Controls.Add(_seedBox);
         flow.Controls.Add(loadBtn);
         flow.Controls.Add(new Label { Text = "中心 X:", AutoSize = true });
@@ -73,16 +78,19 @@ public sealed class MainForm : Form
         _legend.Dock = DockStyle.Left;
         _legend.SelectionChanged += () => _canvas.SetSelected(_legend.Selected);
 
-        // ---- 主画布 ----
-        _canvas.Dock = DockStyle.Fill;
+        // ---- 主画布（固定 512×512，位于图例右侧）----
+        _canvas.Location = new Point(268, 48);
         _canvas.ViewClick += OnCanvasClick;
         _canvas.CanvasMouseDown += e => { _dragStart = e.Location; _dragCenterBX = _centerBX; _dragCenterBZ = _centerBZ; };
         _canvas.CanvasMouseMove += e =>
         {
             if (_dragStart == null) return;
+            // 拖动期间：只移动视图中心 + 更新小地图范围框（主画面松手后才渲染）
             _centerBX = _dragCenterBX + (e.X - _dragStart.Value.X) * _bpp;
             _centerBZ = _dragCenterBZ + (_dragStart.Value.Y - e.Y) * _bpp;
-            UpdateMinimapFrame();
+            _minimap.ViewCx = _centerBX;
+            _minimap.ViewCz = _centerBZ;
+            _minimap.Invalidate();
             UpdateStatus();
         };
         _canvas.CanvasMouseUp += _ =>
@@ -92,30 +100,29 @@ public sealed class MainForm : Form
         };
         _canvas.MouseWheel += OnWheel;
 
-        // ---- 右下：小地图 + 拖动按钮 ----
-        var overlay = new Panel { BackColor = Color.Transparent, Size = new Size(260, 208), Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
-        _dragBtn.Text = "拖动模式";
-        _dragBtn.AutoSize = true;
-        _dragBtn.CheckedChanged += (_, _) =>
+        // ---- 右下角整体预览 + 拖动开关（固定在画布右下角）----
+        var overlay = new Panel { BackColor = Color.Transparent, Size = new Size(258, 206) };
+        _dragBtn.Location = new Point(10, 6);
+        _dragBtn.CheckedChanged += on =>
         {
-            _canvas.DragMode = _dragBtn.Checked;
+            _canvas.DragMode = on;
             _canvas.ClearBubble();
             _canvas.Invalidate();
         };
-        _minimap.Location = new Point(10, 36);
+        _minimap.Location = new Point(10, 38);
         _minimap.Jump += (cx, cz) => { _centerBX = cx; _centerBZ = cz; RenderAsync(); };
         overlay.Controls.Add(_dragBtn);
         overlay.Controls.Add(_minimap);
+        overlay.Location = new Point(_canvas.Width - overlay.Width - 8, _canvas.Height - overlay.Height - 8);
+        _canvas.Controls.Add(overlay);
 
         // ---- 底部状态 ----
         _status.Items.Add(_statusText);
 
         Controls.Add(_canvas);
-        Controls.Add(overlay);
         Controls.Add(_legend);
         Controls.Add(top);
         Controls.Add(_status);
-        overlay.BringToFront();
 
         loadBtn.Click += (_, _) => TryLoadSeed();
         goBtn.Click += (_, _) => { ParseCenterFields(); RenderAsync(); };
@@ -128,7 +135,6 @@ public sealed class MainForm : Form
             _legend.ClearSelection();
             RenderAsync();
         };
-        _canvas.Resize += (_, _) => RenderAsync();
 
         RenderAsync();
     }
@@ -157,6 +163,7 @@ public sealed class MainForm : Form
 
     private void OnCanvasClick(Point p)
     {
+        if (_dragBtn.Checked) return;
         _canvas.ClearBubble();
         int w = _canvas.Width, h = _canvas.Height;
         double minBX = _centerBX - w * _bpp / 2.0;
@@ -178,7 +185,7 @@ public sealed class MainForm : Form
                     {
                         $"区块坐标: ({info.ChunkX}, {info.ChunkZ})",
                         $"方块坐标: ({info.BlockX}, {info.BlockZ})",
-                        $"预测群系: {info.BiomeId}",
+                        $"预测群系: {BiomeZh.DisplayName(info.BiomeId, _zh)}",
                         $"温度: {info.Temperature:F1} °C",
                         $"降水: {info.Rainfall:F1} mm",
                         $"预测气候: {info.Climate}",
@@ -203,6 +210,7 @@ public sealed class MainForm : Form
         _centerBX = bx - (e.X - w / 2.0) * _bpp;
         _centerBZ = bz - (h / 2.0 - e.Y) * _bpp;
         _canvas.ClearBubble();
+        _scaleBox.Text = _bpp.ToString("0.##");
         RenderAsync();
     }
 
@@ -214,9 +222,7 @@ public sealed class MainForm : Form
             return;
         }
         _rendering = true;
-        int w = Math.Max(320, _canvas.Width), h = Math.Max(240, _canvas.Height);
-        _viewW = w;
-        _viewH = h;
+        int w = _canvas.Width, h = _canvas.Height;
         double cx = _centerBX, cz = _centerBZ, bpp = _bpp;
         string layer = _layer;
 
@@ -239,7 +245,8 @@ public sealed class MainForm : Form
                     _minimap.WorldSpan = mmSpan;
                     if (layer == "biome" && result.Present.Count > 0)
                     {
-                        _legend.SetLegend(result.Present.OrderBy(p => p.Name, StringComparer.Ordinal));
+                        _legend.SetLegend(result.Present.Select(p =>
+                            (p.Id, BiomeZh.DisplayName(p.Name, _zh), p.Color)));
                     }
                     UpdateStatus();
                     _minimap.Invalidate();
@@ -261,16 +268,9 @@ public sealed class MainForm : Form
         });
     }
 
-    private void UpdateMinimapFrame()
-    {
-        _minimap.ViewCx = _centerBX;
-        _minimap.ViewCz = _centerBZ;
-        _minimap.Invalidate();
-    }
-
     private void UpdateStatus()
     {
-        double span = Math.Max(_viewW, _viewH) * _bpp;
+        double span = Math.Max(_canvas.Width, _canvas.Height) * _bpp;
         _statusText.Text = string.Format("中心 ({0:F0}, {1:F0}) 块 — 视图约 {2:F1} km × {3:F1} km — {4:F2} 块/像素 — 图层: {5}",
             _centerBX, _centerBZ, span * 0.0625, span * 0.0625, _bpp,
             _layer == "biome" ? "群系" : _layer == "temperature" ? "温度" : "降雨");

@@ -12,12 +12,14 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>..\assets\wheat.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- 共享引擎源码（排除 CLI 的 top-level 入口 Program.cs） -->
     <Compile Include="../src/**/*.cs" Exclude="../src/Program.cs" />
     <EmbeddedResource Include="../biome_colors.json" LogicalName="TfcViewer.biome_colors.json" />
+    <EmbeddedResource Include="../biome_zh.json" LogicalName="TfcViewer.biome_zh.json" />
     <None Include="../assets/wheat.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
