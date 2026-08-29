@@ -6,8 +6,7 @@ using TfcViewer.World.Region;
 namespace TfcViewerGui;
 
 /// <summary>
-/// 主窗体：窗口固定大小；左图例 + 512×512 主画布（默认 512×512 chunk 视图）；
-/// 右下角整体预览与"拖动模式"开关固定在画布右下角。
+/// 主窗体：窗口固定大小；左图例 + 512×512 主画布；右侧栏（上部状态显示区 + 下部整体预览/拖动按钮）。
 /// </summary>
 public sealed class MainForm : Form
 {
@@ -20,6 +19,7 @@ public sealed class MainForm : Form
     private string _layer = "biome";
     private bool _rendering;
     private bool _pendingRender;
+    private string _renderState = "就绪";
 
     private readonly CanvasView _canvas = new() { Size = new Size(512, 512) };
     private readonly LegendPanel _legend = new();
@@ -30,8 +30,7 @@ public sealed class MainForm : Form
     private readonly TextBox _xBox = new();
     private readonly TextBox _zBox = new();
     private readonly TextBox _scaleBox = new();
-    private readonly StatusStrip _status = new();
-    private readonly ToolStripStatusLabel _statusText = new();
+    private readonly Label _statusText = new();
 
     private Point? _dragStart;
     private double _dragCenterBX, _dragCenterBZ;
@@ -41,9 +40,10 @@ public sealed class MainForm : Form
         Text = "TFC 群系查看器";
         FormBorderStyle = FormBorderStyle.FixedSingle;   // 固定窗口，不允许拉伸
         MaximizeBox = false;
-        ClientSize = new Size(790, 600);
+        ClientSize = new Size(1072, 576);
         StartPosition = FormStartPosition.CenterScreen;
         Font = new Font("Microsoft YaHei UI", 9f);
+        try { Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath ?? Application.ExecutablePath); } catch { /* 任务栏图标尽力而为 */ }
 
         LoadEngine(seed);
 
@@ -76,10 +76,44 @@ public sealed class MainForm : Form
 
         // ---- 左图例 ----
         _legend.Dock = DockStyle.Left;
+        _legend.Width = 250;
         _legend.SelectionChanged += () => _canvas.SetSelected(_legend.Selected);
 
-        // ---- 主画布（固定 512×512，位于图例右侧）----
-        _canvas.Location = new Point(268, 48);
+        // ---- 右侧栏：上部状态显示区 + 下部整体预览/拖动按钮 ----
+        var right = new Panel { Dock = DockStyle.Right, Width = 290, BackColor = Color.FromArgb(238, 240, 244) };
+
+        var statusPanel = new Panel { Dock = DockStyle.Top, Height = 128, BackColor = Color.FromArgb(238, 240, 244), Padding = new Padding(10, 8, 10, 4) };
+        var statusTitle = new Label
+        {
+            Text = "状态",
+            Font = new Font("Microsoft YaHei UI", 10f, FontStyle.Bold),
+            AutoSize = true,
+            Location = new Point(10, 8),
+        };
+        _statusText.Location = new Point(10, 32);
+        _statusText.AutoSize = false;
+        _statusText.Size = new Size(270, 92);
+        _statusText.Font = new Font("Microsoft YaHei UI", 9f);
+        statusPanel.Controls.Add(_statusText);
+        statusPanel.Controls.Add(statusTitle);
+
+        _minimap.Dock = DockStyle.Bottom;
+        _minimap.Height = 172;
+        _minimap.Jump += (cx, cz) => { _centerBX = cx; _centerBZ = cz; RenderAsync(); };
+        _dragBtn.Dock = DockStyle.Bottom;
+        _dragBtn.Height = 30;
+        _dragBtn.CheckedChanged += on =>
+        {
+            _canvas.DragMode = on;
+            _canvas.ClearBubble();
+            _canvas.Invalidate();
+        };
+        right.Controls.Add(_minimap);
+        right.Controls.Add(_dragBtn);
+        right.Controls.Add(statusPanel);
+
+        // ---- 主画布（固定 512×512，位于图例与右侧栏之间）----
+        _canvas.Location = new Point(260, 54);
         _canvas.ViewClick += OnCanvasClick;
         _canvas.CanvasMouseDown += e => { _dragStart = e.Location; _dragCenterBX = _centerBX; _dragCenterBZ = _centerBZ; };
         _canvas.CanvasMouseMove += e =>
@@ -100,29 +134,10 @@ public sealed class MainForm : Form
         };
         _canvas.MouseWheel += OnWheel;
 
-        // ---- 右下角整体预览 + 拖动开关（固定在画布右下角）----
-        var overlay = new Panel { BackColor = Color.Transparent, Size = new Size(258, 206) };
-        _dragBtn.Location = new Point(10, 6);
-        _dragBtn.CheckedChanged += on =>
-        {
-            _canvas.DragMode = on;
-            _canvas.ClearBubble();
-            _canvas.Invalidate();
-        };
-        _minimap.Location = new Point(10, 38);
-        _minimap.Jump += (cx, cz) => { _centerBX = cx; _centerBZ = cz; RenderAsync(); };
-        overlay.Controls.Add(_dragBtn);
-        overlay.Controls.Add(_minimap);
-        overlay.Location = new Point(_canvas.Width - overlay.Width - 8, _canvas.Height - overlay.Height - 8);
-        _canvas.Controls.Add(overlay);
-
-        // ---- 底部状态 ----
-        _status.Items.Add(_statusText);
-
         Controls.Add(_canvas);
         Controls.Add(_legend);
+        Controls.Add(right);
         Controls.Add(top);
-        Controls.Add(_status);
 
         loadBtn.Click += (_, _) => TryLoadSeed();
         goBtn.Click += (_, _) => { ParseCenterFields(); RenderAsync(); };
@@ -222,8 +237,10 @@ public sealed class MainForm : Form
             return;
         }
         _rendering = true;
+        _renderState = "正在重新计算...";
         _canvas.Rendering = true;
         _canvas.Invalidate();
+        UpdateStatus();
         int w = _canvas.Width, h = _canvas.Height;
         double cx = _centerBX, cz = _centerBZ, bpp = _bpp;
         string layer = _layer;
@@ -250,6 +267,7 @@ public sealed class MainForm : Form
                         _legend.SetLegend(result.Present.Select(p =>
                             (p.Id, BiomeZh.DisplayName(p.Name, _zh), p.Color)));
                     }
+                    _renderState = "就绪";
                     UpdateStatus();
                     _minimap.Invalidate();
                     _canvas.Rendering = false;
@@ -260,7 +278,8 @@ public sealed class MainForm : Form
             {
                 BeginInvoke(() =>
                 {
-                    _statusText.Text = "渲染错误: " + ex.Message;
+                    _renderState = "错误: " + ex.Message;
+                    UpdateStatus();
                     _canvas.Rendering = false;
                     _canvas.Invalidate();
                 });
@@ -280,8 +299,14 @@ public sealed class MainForm : Form
     private void UpdateStatus()
     {
         double span = Math.Max(_canvas.Width, _canvas.Height) * _bpp;
-        _statusText.Text = string.Format("中心 ({0:F0}, {1:F0}) 块 — 视图约 {2:F1} km × {3:F1} km — {4:F2} 块/像素 — 图层: {5}",
-            _centerBX, _centerBZ, span * 0.0625, span * 0.0625, _bpp,
-            _layer == "biome" ? "群系" : _layer == "temperature" ? "温度" : "降雨");
+        _statusText.Text = string.Format(
+            "中心: ({0:F0}, {1:F0}) 块\n视图: {2:F0}×{3:F0} chunk ({4:F0}×{5:F0} 块 / {6:F1}×{7:F1} km)\n块/像素: {8:F2}\n图层: {9}\n渲染: {10}",
+            _centerBX, _centerBZ,
+            span * 0.0625, span * 0.0625,
+            span, span,
+            span * 0.0625, span * 0.0625,
+            _bpp,
+            _layer == "biome" ? "群系" : _layer == "temperature" ? "温度" : "降雨",
+            _renderState);
     }
 }

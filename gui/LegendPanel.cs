@@ -10,16 +10,21 @@ public sealed class LegendEntry : Control
 
     public event Action<int>? Clicked;
 
+    private readonly Font _font = new("Microsoft YaHei UI", 9f);
+
     public LegendEntry(int id, string name, Color color)
     {
         BiomeId = id;
         BiomeName = name;
         BiomeColor = color;
         Cursor = Cursors.Hand;
-        // 宽度自适应（长中文名 + tfc:id 全称可能很长，允许横向滚动查看）
-        var display = name.StartsWith("tfc:") ? name[4..] : name;
-        int w = TextRenderer.MeasureText(display, new Font("Microsoft YaHei UI", 9f)).Width;
-        Size = new Size(Math.Clamp(w + 44, 140, 900), 26);
+        // 固定列宽，名称过长自动换行（高度自适应）
+        using (var g = CreateGraphics())
+        {
+            var sz = g.MeasureString(name, _font, 216);
+            Height = Math.Max(26, (int)sz.Height + 10);
+        }
+        Width = 234;
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -36,11 +41,11 @@ public sealed class LegendEntry : Control
         g.FillRectangle(c, 10, 5, 16, 16);
         using var pen = new Pen(Color.FromArgb(80, 80, 80));
         g.DrawRectangle(pen, 10, 5, 16, 16);
-        using var f = new Font("Microsoft YaHei UI", 9f);
-        using var t = new SolidBrush(ForeColor);
-        var display = BiomeName;
-        if (display.StartsWith("tfc:")) display = display[4..];
-        g.DrawString(display, f, t, 32, 5);
+        using var tb = new SolidBrush(ForeColor);
+        // 名称多行自动换行，垂直居中
+        using var fmt = new StringFormat { LineAlignment = StringAlignment.Center, Trimming = StringTrimming.EllipsisCharacter };
+        var rect = new RectangleF(32, 2, Width - 38, Height - 4);
+        g.DrawString(BiomeName, _font, tb, rect, fmt);
     }
 
     protected override void OnMouseUp(MouseEventArgs e)
