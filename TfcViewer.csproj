@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>tfcviewer</AssemblyName>
+    <RootNamespace>TfcViewer</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="biome_colors.json" />
+    <None Include="assets/wheat.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 排除 GUI 子工程（含其 obj/bin 生成文件，避免跨工程编译污染） -->
+    <Compile Remove="gui/**" />
+    <EmbeddedResource Remove="gui/**" />
+    <None Remove="gui/**" />
+    <Content Remove="gui/**" />
+  </ItemGroup>
+
+</Project>

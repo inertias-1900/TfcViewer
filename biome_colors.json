@@ -1,0 +1,627 @@
+{
+"tfc:rocky_plateau": [
+180,
+160,
+110
+],
+"tfc:stair_step_canyons": [
+250,
+190,
+0
+],
+"tfc:river_valley": [
+155,
+0,
+170
+],
+"tfc:active_shield_volcano": [
+255,
+85,
+0
+],
+"tfc:sunken_shield_volcano": [
+215,
+175,
+125
+],
+"tfc:plains": [
+100,
+200,
+100
+],
+"tfc:burren_plains": [
+100,
+200,
+100
+],
+"tfc:tower_karst_plains": [
+100,
+200,
+100
+],
+"tfc:doline_plains": [
+100,
+200,
+100
+],
+"tfc:cenote_plains": [
+100,
+200,
+100
+],
+"tfc:shilin_plains": [
+100,
+200,
+100
+],
+"tfc:ice_sheet": [
+255,
+255,
+255
+],
+"tfc:subglacial_lake": [
+255,
+255,
+255
+],
+"tfc:glaciated_shield_volcano": [
+255,
+185,
+125
+],
+"tfc:collisional_mountains": [
+165,
+0,
+0
+],
+"tfc:knob_and_kettle": [
+115,
+115,
+115
+],
+"tfc:shore": [
+230,
+210,
+130
+],
+"tfc:tidal_flats": [
+230,
+210,
+130
+],
+"tfc:salt_flats": [
+190,
+190,
+190
+],
+"tfc:mud_flats": [
+190,
+120,
+100
+],
+"tfc:oceanic_volcanic_arc": [
+0,
+0,
+120
+],
+"tfc:low_canyons": [
+200,
+110,
+255
+],
+"tfc:buttes": [
+190,
+160,
+0
+],
+"tfc:badlands": [
+205,
+160,
+50
+],
+"tfc:burren_badlands": [
+205,
+160,
+50
+],
+"tfc:burren_badlands_tall": [
+205,
+160,
+50
+],
+"tfc:ocean_ridge": [
+50,
+30,
+130
+],
+"tfc:ice_sheet_shield_volcano": [
+255,
+215,
+185
+],
+"tfc:sea_stacks": [
+250,
+220,
+85
+],
+"tfc:ocean_atolls": [
+35,
+120,
+255
+],
+"tfc:deep_ocean_atolls": [
+35,
+120,
+255
+],
+"tfc:ocean": [
+0,
+0,
+220
+],
+"tfc:deep_ocean_trench": [
+0,
+0,
+80
+],
+"tfc:glaciated_oceanic_mountains": [
+255,
+165,
+255
+],
+"tfc:glaciated_volcanic_oceanic_mountains": [
+255,
+165,
+255
+],
+"tfc:deep_ocean": [
+0,
+0,
+160
+],
+"tfc:ice_sheet_edge": [
+165,
+165,
+165
+],
+"tfc:ice_sheet_shore": [
+165,
+165,
+165
+],
+"tfc:mesas": [
+150,
+160,
+0
+],
+"tfc:patterned_ground": [
+135,
+135,
+135
+],
+"tfc:inverted_patterned_ground": [
+135,
+135,
+135
+],
+"tfc:stone_circles": [
+135,
+135,
+135
+],
+"tfc:rolling_hills": [
+50,
+100,
+50
+],
+"tfc:doline_rolling_hills": [
+50,
+100,
+50
+],
+"tfc:cenote_rolling_hills": [
+50,
+100,
+50
+],
+"tfc:guano_island": [
+120,
+120,
+50
+],
+"tfc:ice_sheet_tuyas": [
+235,
+235,
+235
+],
+"tfc:ice_sheet_tuyas_edge": [
+235,
+235,
+235
+],
+"tfc:glacially_carved_mountains": [
+255,
+135,
+135
+],
+"tfc:glacially_carved_volcanic_mountains": [
+255,
+135,
+135
+],
+"tfc:old_mountains": [
+240,
+100,
+100
+],
+"tfc:extreme_doline_mountains": [
+240,
+100,
+100
+],
+"tfc:plateau": [
+190,
+120,
+120
+],
+"tfc:extreme_doline_plateau": [
+190,
+120,
+120
+],
+"tfc:cenote_plateau": [
+190,
+120,
+120
+],
+"tfc:doline_plateau": [
+190,
+120,
+120
+],
+"tfc:shilin_plateau": [
+190,
+120,
+120
+],
+"tfc:burren_plateau": [
+190,
+120,
+120
+],
+"tfc:plateau_wide": [
+190,
+120,
+120
+],
+"tfc:grassy_dunes": [
+90,
+165,
+90
+],
+"tfc:highlands": [
+20,
+80,
+30
+],
+"tfc:shilin_highlands": [
+20,
+80,
+30
+],
+"tfc:tower_karst_highlands": [
+20,
+80,
+30
+],
+"tfc:doline_highlands": [
+20,
+80,
+30
+],
+"tfc:cenote_highlands": [
+20,
+80,
+30
+],
+"tfc:lowlands": [
+220,
+150,
+230
+],
+"tfc:tower_karst_bay": [
+220,
+150,
+230
+],
+"tfc:salt_marsh": [
+220,
+150,
+230
+],
+"tfc:tuyas": [
+115,
+145,
+115
+],
+"tfc:ice_sheet_oceanic": [
+215,
+215,
+215
+],
+"tfc:glacially_carved_oceanic_mountains": [
+255,
+135,
+255
+],
+"tfc:glacially_carved_volcanic_oceanic_mountains": [
+255,
+135,
+255
+],
+"tfc:drumlins": [
+135,
+165,
+135
+],
+"tfc:burren_roche_moutonee": [
+135,
+165,
+135
+],
+"tfc:oceanic_mountains": [
+255,
+0,
+255
+],
+"tfc:volcanic_oceanic_mountains": [
+255,
+0,
+255
+],
+"tfc:volcanic_island": [
+130,
+15,
+95
+],
+"tfc:volcanic_mountain_islands": [
+130,
+15,
+95
+],
+"tfc:river": [
+0,
+200,
+255
+],
+"tfc:dormant_shield_volcano": [
+255,
+105,
+0
+],
+"tfc:ancient_shield_volcano": [
+255,
+155,
+0
+],
+"tfc:canyons": [
+180,
+60,
+255
+],
+"tfc:tower_karst_canyons": [
+180,
+60,
+255
+],
+"tfc:shilin_canyons": [
+180,
+60,
+255
+],
+"tfc:doline_canyons": [
+180,
+60,
+255
+],
+"tfc:cenote_canyons": [
+180,
+60,
+255
+],
+"tfc:terrace_lower": [
+80,
+120,
+120
+],
+"tfc:ice_sheet_oceanic_mountains": [
+255,
+195,
+255
+],
+"tfc:ice_sheet_oceanic_mountains_edge": [
+255,
+195,
+255
+],
+"tfc:ice_sheet_volcanic_oceanic_mountains": [
+255,
+195,
+255
+],
+"tfc:dune_sea": [
+250,
+210,
+140
+],
+"tfc:lake": [
+30,
+30,
+255
+],
+"tfc:meltwater_lake": [
+30,
+30,
+255
+],
+"tfc:rift_lake": [
+30,
+30,
+255
+],
+"tfc:tower_karst_lake": [
+30,
+30,
+255
+],
+"tfc:coastal_dunes": [
+90,
+120,
+40
+],
+"tfc:ice_sheet_mountains": [
+255,
+195,
+195
+],
+"tfc:ice_sheet_mountains_edge": [
+255,
+195,
+195
+],
+"tfc:ice_sheet_volcanic_mountains": [
+255,
+195,
+195
+],
+"tfc:rift_valley": [
+100,
+15,
+100
+],
+"tfc:setback_cliffs": [
+170,
+230,
+75
+],
+"tfc:shield_volcano_shore": [
+215,
+180,
+75
+],
+"tfc:old_shield_volcano_shore": [
+215,
+180,
+75
+],
+"tfc:hills": [
+80,
+130,
+80
+],
+"tfc:shilin_hills": [
+80,
+130,
+80
+],
+"tfc:tower_karst_hills": [
+80,
+130,
+80
+],
+"tfc:doline_hills": [
+80,
+130,
+80
+],
+"tfc:cenote_hills": [
+80,
+130,
+80
+],
+"tfc:rocky_shores": [
+140,
+140,
+100
+],
+"tfc:embayments": [
+140,
+140,
+100
+],
+"tfc:extinct_shield_volcano": [
+255,
+135,
+0
+],
+"tfc:glaciated_mountains": [
+255,
+165,
+165
+],
+"tfc:glaciated_volcanic_mountains": [
+255,
+165,
+165
+],
+"tfc:terrace_upper": [
+110,
+160,
+155
+],
+"tfc:mountains": [
+255,
+50,
+50
+],
+"tfc:volcanic_mountains": [
+255,
+50,
+50
+],
+"tfc:whorled_canyons": [
+250,
+215,
+0
+],
+"tfc:mountain_lake": [
+20,
+180,
+255
+],
+"tfc:oceanic_mountain_lake": [
+20,
+180,
+255
+],
+"tfc:old_mountain_lake": [
+20,
+180,
+255
+],
+"tfc:volcanic_mountain_lake": [
+20,
+180,
+255
+],
+"tfc:plateau_lake": [
+20,
+180,
+255
+],
+"tfc:volcanic_oceanic_mountain_lake": [
+20,
+180,
+255
+],
+"tfc:ocean_reef": [
+70,
+160,
+250
+],
+"tfc:hoodoos": [
+230,
+180,
+0
+]
+}

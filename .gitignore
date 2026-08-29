@@ -1,0 +1,6 @@
+bin/
+obj/
+publish/win-x64/*.pdb
+*.user
+*.suo
+.vs/
