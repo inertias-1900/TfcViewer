@@ -17,6 +17,7 @@ public sealed class CanvasView : UserControl
 
     public HashSet<int> Selected { get; private set; } = new();
     public bool DragMode;
+    public bool Rendering;   // 渲染中：灰白覆盖层 + "正在重新计算"
 
     public BubbleData? Bubble;
 
@@ -176,6 +177,17 @@ public sealed class CanvasView : UserControl
             g.DrawString("拖动模式：按住左键拖动画面", f, tb, 14, 13);
         }
         DrawBubble(g);
+
+        if (Rendering)
+        {
+            // 渲染中覆盖层：灰白半透明 + 居中提示
+            using var cover = new SolidBrush(Color.FromArgb(190, 238, 238, 238));
+            g.FillRectangle(cover, 0, 0, Width, Height);
+            using var f = new Font("Microsoft YaHei UI", 14f, FontStyle.Bold);
+            using var tb = new SolidBrush(Color.FromArgb(70, 70, 70));
+            var sz = g.MeasureString("正在重新计算", f);
+            g.DrawString("正在重新计算", f, tb, (Width - sz.Width) / 2f, (Height - sz.Height) / 2f);
+        }
     }
 
     private void DrawBubble(Graphics g)

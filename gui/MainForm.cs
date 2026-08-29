@@ -222,6 +222,8 @@ public sealed class MainForm : Form
             return;
         }
         _rendering = true;
+        _canvas.Rendering = true;
+        _canvas.Invalidate();
         int w = _canvas.Width, h = _canvas.Height;
         double cx = _centerBX, cz = _centerBZ, bpp = _bpp;
         string layer = _layer;
@@ -250,11 +252,18 @@ public sealed class MainForm : Form
                     }
                     UpdateStatus();
                     _minimap.Invalidate();
+                    _canvas.Rendering = false;
+                    _canvas.Invalidate();
                 });
             }
             catch (Exception ex)
             {
-                BeginInvoke(() => _statusText.Text = "渲染错误: " + ex.Message);
+                BeginInvoke(() =>
+                {
+                    _statusText.Text = "渲染错误: " + ex.Message;
+                    _canvas.Rendering = false;
+                    _canvas.Invalidate();
+                });
             }
             finally
             {
