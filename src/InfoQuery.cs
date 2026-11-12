@@ -67,6 +67,24 @@ public static class ViewerQuery
             biome, p.Temperature, p.Rainfall, climate, confidence);
     }
 
+    /// <summary>
+    /// 气候分类的整数版（0..8），顺序：冰盖/冰缘/古冰缘/沙漠/半干旱/半湿润/湿润/湿热/温带。
+    /// 与 <see cref="ClassifyClimate"/> 完全同阈值，供逐像素使用（避免字符串分配）。
+    /// </summary>
+    public static int ClassifyClimateId(float temperature, float rainfall)
+    {
+        float iceLine = -17f + 0.006f * rainfall;
+        if (rainfall >= 0f && temperature < iceLine) return 0;
+        if (rainfall >= 0f && temperature < iceLine + 2.5f) return 1;
+        if (rainfall >= 0f && temperature < iceLine + 6f) return 2;
+        if (rainfall < 60f) return 3;
+        if (rainfall < 155f) return 4;
+        if (rainfall > 425f && rainfall + 10f * temperature > 500f) return 7;
+        if (rainfall > 375f) return 6;
+        if (rainfall > 250f) return 5;
+        return 8;
+    }
+
     /// <summary>气候分类：TFC ChooseBiomes 的阈值风格（冰盖线 -17+0.006r / 冰缘 +2.5 / 古冰缘 +6 / 沙漠 60 / 半干旱 155 / 喀斯特 250-425）</summary>
     /// <returns>稳定英文 key，显示语言由调用方本地化</returns>
     public static string ClassifyClimate(float temperature, float rainfall)

@@ -8,6 +8,7 @@
     <AssemblyName>tfcviewer</AssemblyName>
     <RootNamespace>TfcViewer</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

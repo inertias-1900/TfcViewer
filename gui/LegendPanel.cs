@@ -108,10 +108,21 @@ public sealed class LegendPanel : UserControl
         Controls.Add(title);
     }
 
+    /// <summary>设置图例标题（由调用方按筛选模式决定）</summary>
+    public void SetTitle(string text)
+    {
+        _titleText = text;
+        _titleLabel.Text = text;
+    }
+
+    private string _titleText = "";
+
     /// <summary>切换界面语言，刷新标题/按钮文字</summary>
     public void ApplyLanguage()
     {
-        _titleLabel.Text = English ? "Legend (click to multi-select)" : "图例（点击多选）";
+        _titleLabel.Text = string.IsNullOrEmpty(_titleText)
+            ? (English ? "Legend (click to multi-select)" : "图例（点击多选）")
+            : _titleText;
         _clearBtn.Text = English ? "✕ Clear selection" : "✕ 取消选择";
     }
 

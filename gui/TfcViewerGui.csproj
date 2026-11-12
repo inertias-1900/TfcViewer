@@ -10,6 +10,7 @@
     <AssemblyName>TfcViewerGui</AssemblyName>
     <RootNamespace>TfcViewerGui</RootNamespace>
     <InvariantGlobalization>true</InvariantGlobalization>
+    <Version>1.1.0</Version>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationIcon>..\assets\wheat.ico</ApplicationIcon>

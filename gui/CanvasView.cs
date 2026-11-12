@@ -7,45 +7,56 @@ public sealed class BubbleData
     public string[] Lines = Array.Empty<string>();
 }
 
-/// <summary>主画布：渲染图显示 + 选中群系灰显/描边 + 信息气泡 + 拖动/查看交互</summary>
+/// <summary>
+/// 主画布：显示一块比视口大 3 倍的渲染缓冲区，按当前视口裁剪绘制。
+/// 右键按住可实时平移（只移动视口，不重渲染）；松开后由外部重渲染新缓冲区。
+/// 左键单击查询；选中分类后未选中项灰度化、选中项白描边。
+/// </summary>
 public sealed class CanvasView : UserControl
 {
-    public Bitmap? Source;
-    private Bitmap? _display;
-    private int[] _biomeIds = Array.Empty<int>();   // 渲染像素对应的 biomeId（w*h）
-    private int _srcW, _srcH;
+    // ---- 缓冲区 ----
+    private Bitmap? _source;                 // 原始渲染缓冲
+    private Bitmap? _display;                // 经过选中处理后的缓冲（无选中时与 _source 同一对象）
+    private int[] _classIds = Array.Empty<int>();   // 缓冲像素的分类 id
+    private int _bufW, _bufH;
+    private double _bufMinBX, _bufMinBZ, _bufBpp;
+
+    // ---- 视口 ----
+    public double ViewCenterBX, ViewCenterBZ;
+    public double ViewBpp = 16;
 
     public HashSet<int> Selected { get; private set; } = new();
-    public bool DragMode;
-    public bool Rendering;   // 渲染中：灰白覆盖层 + 提示
-    public bool English;     // 英文界面（提示文字）
+    public bool Rendering;
+    public bool English;
+
+    // 纬度刻度
+    public int TemperatureScale = 20000;
+    public bool ShowLatitude = true;
 
     public BubbleData? Bubble;
 
-    /// <summary>查看模式点击（画布坐标）</summary>
+    /// <summary>左键单击（画布坐标）</summary>
     public event Action<Point>? ViewClick;
-
-    /// <summary>拖动交互（画布坐标、按钮状态）</summary>
-    public event Action<MouseEventArgs>? CanvasMouseDown;
-    public event Action<MouseEventArgs>? CanvasMouseMove;
-    public event Action<MouseEventArgs>? CanvasMouseUp;
 
     public CanvasView()
     {
         BackColor = Color.FromArgb(12, 16, 30);
         DoubleBuffered = true;
         SetStyle(ControlStyles.ResizeRedraw, true);
+        Cursor = Cursors.Cross;
     }
 
-    /// <summary>设置渲染结果：位图 + 每像素 biomeId（仅 biome 层有意义，其他层传 null 或不启用选中）</summary>
-    public void SetSource(Bitmap bmp, int[] biomeIds, int w, int h)
+    /// <summary>设置缓冲区：位图 + 分类矩阵 + 缓冲区覆盖的世界范围</summary>
+    public void SetBuffer(Bitmap bmp, int[] classIds, int w, int h, double minBX, double minBZ, double bpp)
     {
-        Source?.Dispose();
-        _display?.Dispose();
-        Source = bmp;
-        _biomeIds = biomeIds ?? Array.Empty<int>();
-        _srcW = w;
-        _srcH = h;
+        DisposeBuffers();
+        _source = bmp;
+        _classIds = classIds ?? Array.Empty<int>();
+        _bufW = w;
+        _bufH = h;
+        _bufMinBX = minBX;
+        _bufMinBZ = minBZ;
+        _bufBpp = bpp;
         RebuildDisplay();
         Invalidate();
     }
@@ -57,6 +68,13 @@ public sealed class CanvasView : UserControl
         Invalidate();
     }
 
+    public void SetView(double centerBX, double centerBZ)
+    {
+        ViewCenterBX = centerBX;
+        ViewCenterBZ = centerBZ;
+        Invalidate();
+    }
+
     public void ClearBubble()
     {
         if (Bubble == null) return;
@@ -64,26 +82,37 @@ public sealed class CanvasView : UserControl
         Invalidate();
     }
 
+    private void DisposeBuffers()
+    {
+        if (!ReferenceEquals(_display, _source)) _display?.Dispose();
+        _display = null;
+        _source?.Dispose();
+        _source = null;
+        _classIds = Array.Empty<int>();
+        _bufW = _bufH = 0;
+    }
+
     /// <summary>后处理：无选中→原图；有选中→未选中灰度化、选中原色+8邻域描白边</summary>
     private void RebuildDisplay()
     {
-        _display?.Dispose();
+        if (!ReferenceEquals(_display, _source)) _display?.Dispose();
         _display = null;
-        var src = Source;
-        if (src == null || _biomeIds.Length != _srcW * _srcH || Selected.Count == 0)
+
+        var src = _source;
+        if (src == null)
         {
-            var copy = new Bitmap(src?.Width ?? 1, src?.Height ?? 1);
-            if (src != null)
-            {
-                using var g = Graphics.FromImage(copy);
-                g.DrawImageUnscaled(src, 0, 0);
-            }
-            _display = copy;
+            Invalidate();
             return;
         }
 
-        var w = _srcW;
-        var h = _srcH;
+        if (Selected.Count == 0 || _classIds.Length != _bufW * _bufH)
+        {
+            _display = src;
+            Invalidate();
+            return;
+        }
+
+        int w = _bufW, h = _bufH;
         var outp = new Bitmap(w, h);
         var rect = new Rectangle(0, 0, w, h);
         var srcData = src.LockBits(rect, System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -94,8 +123,7 @@ public sealed class CanvasView : UserControl
             byte* d0 = (byte*)outData.Scan0;
             int stride = srcData.Stride;
             bool[] isSel = new bool[w * h];
-            for (int i = 0; i < _biomeIds.Length; i++)
-                isSel[i] = Selected.Contains(_biomeIds[i]);
+            for (int i = 0; i < _classIds.Length; i++) isSel[i] = Selected.Contains(_classIds[i]);
 
             for (int y = 0; y < h; y++)
             {
@@ -108,7 +136,6 @@ public sealed class CanvasView : UserControl
                     byte* d = dRow + x * 4;
                     if (isSel[i])
                     {
-                        // 描边：8 邻域存在非选中
                         bool edge = false;
                         for (int dy = -1; dy <= 1 && !edge; dy++)
                         {
@@ -126,15 +153,14 @@ public sealed class CanvasView : UserControl
                         if (edge)
                         {
                             d[0] = d[1] = d[2] = 255;
-                            d[3] = 255;
                         }
                         else
                         {
                             d[2] = s[2];
                             d[1] = s[1];
                             d[0] = s[0];
-                            d[3] = 255;
                         }
+                        d[3] = 255;
                     }
                     else
                     {
@@ -148,16 +174,60 @@ public sealed class CanvasView : UserControl
         src.UnlockBits(srcData);
         outp.UnlockBits(outData);
         _display = outp;
+        Invalidate();
+    }
+
+    // ---- 坐标换算 ----
+
+    /// <summary>画布坐标 → 世界方块坐标（顶部 = 较大 Z，与渲染行序一致）</summary>
+    public (int Bx, int Bz) ToWorld(Point p)
+    {
+        double bx = ViewCenterBX + (p.X - Width / 2.0) * ViewBpp;
+        double bz = ViewCenterBZ + (Height / 2.0 - p.Y) * ViewBpp;
+        return ((int)Math.Floor(bx), (int)Math.Floor(bz));
+    }
+
+    /// <summary>画布第 y 行对应的世界 Z</summary>
+    public double WorldZAtRow(int y) => ViewCenterBZ + (Height / 2.0 - y) * ViewBpp;
+
+    /// <summary>TFC 的纬度：温度纬度轴 z=0 为赤道，|z| = temperatureScale/2 为极点（90°）</summary>
+    public static double LatitudeAt(double z, int temperatureScale)
+    {
+        double pole = Math.Max(1.0, temperatureScale / 2.0);
+        double period = pole * 2;
+        double d = z % period;
+        if (d < 0) d += period;
+        double t = d <= pole ? d : period - d;
+        return 90.0 * t / pole;
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
         var g = e.Graphics;
         g.Clear(BackColor);
-        var img = _display ?? Source;
-        if (img != null)
+
+        var img = _display;
+        if (img != null && _bufW > 0)
         {
-            g.DrawImage(img, 0, 0, Width, Height);
+            // 视口左上角与顶部对应的世界坐标
+            double viewLeft = ViewCenterBX - Width * ViewBpp / 2.0;
+            double viewTopZ = ViewCenterBZ + Height * ViewBpp / 2.0;
+
+            double srcX = (viewLeft - _bufMinBX) / _bufBpp;
+            double srcTop = (_bufMinBZ + (_bufH - 1) * _bufBpp - viewTopZ) / _bufBpp;
+            double srcW = Math.Min(_bufW, Width * ViewBpp / _bufBpp);
+            double srcH = Math.Min(_bufH, Height * ViewBpp / _bufBpp);
+
+            // 只绘制视口对应的子区域（clamp 在缓冲内），避免 GDI 每次处理整张缓冲
+            srcX = Math.Clamp(srcX, 0, Math.Max(0, _bufW - srcW));
+            srcTop = Math.Clamp(srcTop, 0, Math.Max(0, _bufH - srcH));
+
+            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+            g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+            g.DrawImage(img,
+                new RectangleF(0, 0, Width, Height),
+                new RectangleF((float)srcX, (float)srcTop, (float)srcW, (float)srcH),
+                GraphicsUnit.Pixel);
         }
         else
         {
@@ -165,23 +235,12 @@ public sealed class CanvasView : UserControl
             using var b = new SolidBrush(Color.White);
             g.DrawString(English ? "Rendering..." : "渲染中...", f, b, 10, 10);
         }
-        if (DragMode)
-        {
-            // 拖动模式边框
-            using var pen = new Pen(Color.FromArgb(255, 200, 60), 2f);
-            g.DrawRectangle(pen, 1, 1, Width - 3, Height - 3);
-            // 左上角说明：白底 + 加粗黑字
-            using var bg = new SolidBrush(Color.White);
-            g.FillRectangle(bg, 8, 8, 250, 30);
-            using var f = new Font("Microsoft YaHei UI", 10.5f, FontStyle.Bold);
-            using var tb = new SolidBrush(Color.Black);
-            g.DrawString(English ? "Drag mode: hold LMB to pan" : "拖动模式：按住左键拖动画面", f, tb, 14, 13);
-        }
+
+        DrawLatitude(g);
         DrawBubble(g);
 
-        if (Rendering)
+        if (Rendering && _display == null)
         {
-            // 渲染中覆盖层：灰白半透明 + 居中提示
             using var cover = new SolidBrush(Color.FromArgb(190, 238, 238, 238));
             g.FillRectangle(cover, 0, 0, Width, Height);
             using var f = new Font("Microsoft YaHei UI", 14f, FontStyle.Bold);
@@ -193,6 +252,31 @@ public sealed class CanvasView : UserControl
     }
 
     private RectangleF _bubbleRect = RectangleF.Empty;
+
+    /// <summary>左右两侧的纬度刻度小字</summary>
+    private void DrawLatitude(Graphics g)
+    {
+        if (!ShowLatitude || _display == null) return;
+
+        using var f = new Font("Microsoft YaHei UI", 8f);
+        using var bg = new SolidBrush(Color.FromArgb(155, 255, 255, 255));
+        using var tb = new SolidBrush(Color.FromArgb(35, 35, 35));
+
+        const int step = 64;
+        for (int y = step / 2; y < Height; y += step)
+        {
+            double lat = LatitudeAt(WorldZAtRow(y), TemperatureScale);
+            string text = English ? $"Lat {lat:F0}°" : $"纬度 {lat:F0}°";
+            var sz = g.MeasureString(text, f);
+
+            g.FillRectangle(bg, 2, y - sz.Height / 2, sz.Width + 5, sz.Height);
+            g.DrawString(text, f, tb, 4, y - sz.Height / 2);
+
+            float rightX = Width - sz.Width - 8;
+            g.FillRectangle(bg, rightX - 2, y - sz.Height / 2, sz.Width + 5, sz.Height);
+            g.DrawString(text, f, tb, rightX, y - sz.Height / 2);
+        }
+    }
 
     private void DrawBubble(Graphics g)
     {
@@ -234,22 +318,10 @@ public sealed class CanvasView : UserControl
     /// <summary>点击是否落在气泡内部（用于"点气泡关闭气泡"）</summary>
     public bool HitTestBubble(Point p) => Bubble != null && _bubbleRect.Contains(p);
 
-    protected override void OnMouseDown(MouseEventArgs e)
-    {
-        base.OnMouseDown(e);
-        if (DragMode) CanvasMouseDown?.Invoke(e);
-    }
-
-    protected override void OnMouseMove(MouseEventArgs e)
-    {
-        base.OnMouseMove(e);
-        if (DragMode && e.Button == MouseButtons.Left) CanvasMouseMove?.Invoke(e);
-    }
-
     protected override void OnMouseUp(MouseEventArgs e)
     {
         base.OnMouseUp(e);
-        if (DragMode) CanvasMouseUp?.Invoke(e);
-        else if (e.Button == MouseButtons.Left) ViewClick?.Invoke(e.Location);
+        if (e.Button == MouseButtons.Left)
+            ViewClick?.Invoke(e.Location);
     }
 }
